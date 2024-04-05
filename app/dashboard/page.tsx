@@ -4,14 +4,22 @@ import prisma from "../lib/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { Edit, File, Trash } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { TrashDelete } from "../components/SubmitButtons";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 async function getData(userId: string) {
-  const data = await prisma.note.findMany({
+  noStore();
+  const data = await prisma.user.findUnique({
     where: {
-      userId: userId,
+      id: userId,
     },
-    orderBy: {
-      createdAt: "desc",
+    select: {
+      Notes: true,
+      Subscription: {
+        select: {
+          status: true,
+        },
+      },
     },
   });
 
@@ -23,6 +31,20 @@ export default async function DashboardPage() {
   const user = await getUser();
   const data = await getData(user?.id as string);
 
+  async function deleteNote(formData: FormData) {
+    "use server";
+
+    const noteId = formData.get("noteId") as string;
+
+    await prisma.note.delete({
+      where: {
+        id: noteId,
+      },
+    });
+
+    revalidatePath("/dashboard");
+  }
+
   return (
     <div className="grid items-start gap-8">
       <div className="flex items-center justify-between px-2">
@@ -33,12 +55,18 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        <Button asChild>
-          <Link href="/dashboard/new">Create a new note</Link>
-        </Button>
+        {data?.Subscription?.status === "active" ? (
+          <Button asChild>
+            <Link href="/dashboard/new">Create a new note</Link>
+          </Button>
+        ) : (
+          <Button asChild>
+            <Link href="/dashboard/billing">Create a new note</Link>
+          </Button>
+        )}
       </div>
 
-      {data.length < 1 ? (
+      {data?.Notes.length == 0 ? (
         <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 ">
             <File className="w-10 h-10 text-primary" />
@@ -52,13 +80,19 @@ export default async function DashboardPage() {
             can see them right here.
           </p>
 
-          <Button asChild>
-            <Link href="/dashboard/new">Create a new note</Link>
-          </Button>
+          {data?.Subscription?.status === "active" ? (
+            <Button asChild>
+              <Link href="/dashboard/new">Create a new note</Link>
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href="/dashboard/billing">Create a new note</Link>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-y-4">
-          {data.map((item) => (
+          {data?.Notes.map((item) => (
             <Card
               key={item.id}
               className="flex items-center justify-between p-4"
@@ -80,10 +114,9 @@ export default async function DashboardPage() {
                     <Edit className="w-4 h-4" />
                   </Button>
                 </Link>
-                <form>
-                  <Button variant="destructive" size="icon">
-                    <Trash className="h-4 w-4" />
-                  </Button>
+                <form action={deleteNote}>
+                  <input type="hidden" name="noteId" value={item.id} />
+                  <TrashDelete />
                 </form>
               </div>
             </Card>

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import prisma from "../lib/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { Edit, File, Trash } from "lucide-react";
+import { Edit, File } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { TrashDelete } from "../components/SubmitButtons";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
@@ -73,10 +73,10 @@ export default async function DashboardPage() {
           </div>
 
           <h2 className="mt-6 text-xl font-semibold">
-            You don't have any notes created
+            You dont have any notes created
           </h2>
           <p className="mb-8 mt-2 text-center text-sm leading-6 text-muted-foreground max-w-sm mx-auto">
-            You currently don't have any notes. Please create some so that you
+            You currently dont have any notes. Please create some so that you
             can see them right here.
           </p>
 
